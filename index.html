@@ -16,16 +16,33 @@
     <div class="site-container">
       <div id="topic-container">
         <h1 id="topic-title">Topic</h1>
-        <div id="topic-menu" class="hidden"></div>
+        <div id="context-menu" class="hidden"></div>
       </div>
+      <div id="overlay" class="hidden"></div>
       <div id="flashcard-container">
-        <h3>#<span id="idx">1</span></h3>
+        <h3 class="idx-display">#<span id="idx">1</span></h3>
+        <h3 class="help-display">
+          ?
+          <span class="help-text"
+            >Click the arrows to change cards.<br />
+            Click "Flip" to view the other side.<br />
+            Use "Add" or "Remove" to manage cards.<br />
+            Click the topic name to manage sets.<br />
+            Click the topic name to close any menus</span
+          >
+        </h3>
         <p id="card-content"></p>
       </div>
-      <div id="control-container">
-        <button onClick="decreaseIdx()"><-</button>
-        <button onClick="flipCard()">Flip</button>
-        <button onClick="increaseIdx()">-></button>
+      <div id="controls-container">
+        <div id="display-controls">
+          <button onClick="decreaseIdx()"><-</button>
+          <button onClick="flipCard()">Flip</button>
+          <button onClick="increaseIdx()">-></button>
+        </div>
+        <div id="card-controls">
+          <button onclick="addFlashcard()">Add</button>
+          <button onclick="removeFlashcard()">Remove</button>
+        </div>
       </div>
     </div>
 

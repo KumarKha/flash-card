@@ -65,7 +65,7 @@ class CardSetManager {
   }
   add(cardset) {
     if (this.findSetIdxByName(cardset.topic) != -1) {
-      throw new Error(`Card Set with topic ${cardset.topic}`);
+      throw new Error(`Card Set with topic ${cardset.topic} already exist`);
     }
     this.manager.push(cardset);
   }
