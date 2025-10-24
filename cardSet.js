@@ -57,9 +57,7 @@ class CardSet {
 class CardSetManager {
   constructor(cardset) {
     if (cardset == null) {
-      throw new Error(
-        "Card Set Manager must be created with an existing Card Set"
-      );
+      cardset = new CardSet("Untitled");
     }
     this.manager = [cardset];
   }

@@ -4,13 +4,42 @@ const topicTitle = document.getElementById("topic-title");
 const contextMenu = document.getElementById("context-menu");
 const overlay = document.getElementById("overlay");
 
-const defaultCardSet = new CardSet("Default");
-const setManger = new CardSetManager(defaultCardSet);
+const setManger = new CardSetManager();
+let currentCardSet;
+const loadedSet = loadFromLocalStorage(setManger);
+if (loadedSet) {
+  currentCardSet = loadedSet;
+} else {
+  currentCardSet = setManger.manager[0];
+}
 
-let currentCardSet = defaultCardSet;
-topicTitle.innerHTML = defaultCardSet.topic;
+topicTitle.innerHTML = currentCardSet.topic;
 
 let idx = 0;
+
+function createBtn(btnContent, callback) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.innerText = btnContent;
+  btn.addEventListener("click", callback);
+  return btn;
+}
+function menuOn() {
+  contextMenu.classList.remove("hidden");
+  overlay.classList.remove("hidden");
+  requestAnimationFrame(() => {
+    overlay.classList.add("active");
+  });
+}
+function menuOff() {
+  contextMenu.classList.add("hidden");
+  overlay.classList.remove("active");
+  overlay.addEventListener(
+    "transitionend",
+    () => overlay.classList.add("hidden"),
+    { once: true }
+  );
+}
 
 topicTitle.addEventListener("click", () => {
   if (!setManger || setManger.size() === 0) {
@@ -18,11 +47,13 @@ topicTitle.addEventListener("click", () => {
   }
   if (contextMenu.classList.contains("hidden")) {
     renderTopicMenu();
-    contextMenu.classList.remove("hidden");
+    menuOn();
   } else {
-    contextMenu.classList.add("hidden");
-    overlay.classList.remove("active");
+    menuOff();
   }
+});
+overlay.addEventListener("click", () => {
+  menuOff();
 });
 // Opens Menu for Set Management
 function renderTopicMenu() {
@@ -33,30 +64,20 @@ function renderTopicMenu() {
   contextMenu.appendChild(header);
   //Create button for each Topic
   topics.forEach((topic) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.textContent = topic;
-    btn.addEventListener("click", () => {
-      selectTopic(topic);
-    });
+    const btn = createBtn(topic, () => selectTopic(topic));
     contextMenu.appendChild(btn);
   });
 
   //  Set Management Buttons
   const div = document.createElement("div");
   div.id = "menu-controls";
-  const plusBtn = document.createElement("button");
-  plusBtn.type = "button";
-  plusBtn.textContent = "Add Set";
-  plusBtn.addEventListener("click", () => {
+  const plusBtn = createBtn("Add Set", () => {
     addSet();
   });
-  const subBtn = document.createElement("button");
-  subBtn.type = "button";
-  subBtn.textContent = "Remove Set";
-  subBtn.addEventListener("click", () => {
+  const subBtn = createBtn("Remove Set", () => {
     removeSet();
   });
+
   div.appendChild(plusBtn);
   div.appendChild(subBtn);
   contextMenu.appendChild(div);
@@ -69,7 +90,7 @@ function selectTopic(topic) {
   idx = 0;
   topicTitle.textContent = currentCardSet.topic;
   displayCard();
-  contextMenu.classList.add("hidden");
+  menuOff();
 }
 
 // Button Functions
@@ -133,10 +154,7 @@ function addFlashcard() {
   const backInput = document.createElement("input");
   backInput.type = "text";
   backInput.placeholder = "Enter back text...";
-  const createBtn = document.createElement("button");
-  createBtn.type = "button";
-  createBtn.textContent = "Create";
-  createBtn.addEventListener("click", () => {
+  const createFlashBtn = createBtn("Create", () => {
     let front = frontInput.value;
     let back = backInput.value;
     if (!front && !back) {
@@ -150,18 +168,19 @@ function addFlashcard() {
       back = "";
     }
     currentCardSet.add(front, back);
-    contextMenu.classList.add("hidden");
+    saveToLocalStorage(setManger);
+    menuOff();
     idx = currentCardSet.getSize() - 1;
     displayCard();
   });
-
   contextMenu.appendChild(frontInput);
   contextMenu.appendChild(backInput);
-  contextMenu.appendChild(createBtn);
-  contextMenu.classList.remove("hidden");
+  contextMenu.appendChild(createFlashBtn);
+  menuOn();
 }
 function removeFlashcard() {
   currentCardSet.remove(idx);
+  saveToLocalStorage(setManger);
   decreaseIdx();
 }
 function addSet() {
@@ -169,10 +188,7 @@ function addSet() {
   const setInput = document.createElement("input");
   setInput.type = "text";
   setInput.placeholder = "Enter topic text...";
-  const createBtn = document.createElement("button");
-  createBtn.type = "button";
-  createBtn.textContent = "Create";
-  createBtn.addEventListener("click", () => {
+  const createSetBtn = createBtn("Create", () => {
     const set = setInput.value;
 
     if (!set) {
@@ -181,18 +197,20 @@ function addSet() {
     }
     try {
       setManger.add(new CardSet(set));
+      saveToLocalStorage(setManger);
     } catch (error) {
       alert(error);
     }
 
-    contextMenu.classList.add("hidden");
+    menuOff();
     currentCardSet = setManger.getSetByName(set);
     topicTitle.innerText = set;
     displayCard();
   });
+
   contextMenu.appendChild(setInput);
-  contextMenu.appendChild(createBtn);
-  contextMenu.classList.remove("hidden");
+  contextMenu.appendChild(createSetBtn);
+  menuOn();
 }
 
 function removeSet() {
@@ -200,17 +218,13 @@ function removeSet() {
   const setInput = document.createElement("input");
   setInput.type = "text";
   setInput.placeholder = "Enter topic title...";
-  const removeBtn = document.createElement("button");
-  removeBtn.type = "button";
-  removeBtn.textContent = "Remove";
-  removeBtn.addEventListener("click", () => {
+  const removeBtn = createBtn("Remove Set", () => {
     const set = setInput.value;
 
     if (!set) {
       alert("Please fill in fields");
       return;
     }
-
     // Find the Set in the Manager
     let idxToRemove = setManger.findSetIdxByName(set);
     if (idxToRemove === -1) {
@@ -219,16 +233,17 @@ function removeSet() {
       return;
     }
     setManger.remove(idxToRemove);
+    saveToLocalStorage(setManger);
     // Show the first  set in the manager
     currentCardSet = setManger.manager[0];
     idx = 0;
     topicTitle.textContent = currentCardSet.topic;
     displayCard();
-    contextMenu.classList.add("hidden");
+    menuOff();
   });
   contextMenu.appendChild(setInput);
   contextMenu.appendChild(removeBtn);
-  contextMenu.classList.remove("hidden");
+  menuOn();
 }
 
 displayCard();
