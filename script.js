@@ -4,42 +4,73 @@ const topicTitle = document.getElementById("topic-title");
 const contextMenu = document.getElementById("context-menu");
 const overlay = document.getElementById("overlay");
 
-const setManger = new CardSetManager();
+let setManger = new CardSetManager();
 let currentCardSet;
+
+// --- Demo Data for Initial Load ---
+const jsBasics = new CardSet("JavaScript Basics");
+jsBasics.add("What keyword declares a variable?", "`let`, `const`, or `var`");
+jsBasics.add(
+  "What does '===' mean?",
+  "Strict equality (checks type and value)"
+);
+jsBasics.add("How do you write a function?", "function name() { /* code */ }");
+jsBasics.add("What is an array?", "An ordered list of values stored in []");
+
+const webFundamentals = new CardSet("Web Fundamentals");
+webFundamentals.add("What does HTML stand for?", "HyperText Markup Language");
+webFundamentals.add(
+  "What does CSS do?",
+  "It styles the HTML content visually."
+);
+webFundamentals.add("What language controls interactivity?", "JavaScript");
+webFundamentals.add("What tag is used for links?", "<a href='...'>Link</a>");
+
+const studyHabits = new CardSet("Study Habits");
+studyHabits.add(
+  "Best way to memorize concepts?",
+  "Active recall with spaced repetition"
+);
+studyHabits.add(
+  "How long should a focus session be?",
+  "About 25 minutes (Pomodoro method)"
+);
+studyHabits.add(
+  "Why take breaks?",
+  "To improve memory retention and reduce fatigue"
+);
+
+setManger = new CardSetManager(jsBasics);
+setManger.add(webFundamentals);
+setManger.add(studyHabits);
+currentCardSet = jsBasics;
+
+// Load setManager from local storage
 const loadedSet = loadFromLocalStorage(setManger);
 if (loadedSet) {
   currentCardSet = loadedSet;
 } else {
-  currentCardSet = setManger.manager[0];
+  // Load demo data only if no saved data
+  setManger = new CardSetManager(jsBasics);
+  setManger.add(webFundamentals);
+  setManger.add(studyHabits);
+  currentCardSet = jsBasics;
 }
-
 topicTitle.innerHTML = currentCardSet.topic;
 
 let idx = 0;
 
-function createBtn(btnContent, callback) {
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.innerText = btnContent;
-  btn.addEventListener("click", callback);
-  return btn;
-}
-function menuOn() {
-  contextMenu.classList.remove("hidden");
-  overlay.classList.remove("hidden");
-  requestAnimationFrame(() => {
-    overlay.classList.add("active");
-  });
-}
-function menuOff() {
-  contextMenu.classList.add("hidden");
-  overlay.classList.remove("active");
-  overlay.addEventListener(
-    "transitionend",
-    () => overlay.classList.add("hidden"),
-    { once: true }
+// Reset button to clear all data
+idxDisplay.addEventListener("click", () => {
+  const confirmed = confirm(
+    "⚠️ This will delete all flashcards and reset your data. Continue?"
   );
-}
+  if (confirmed) {
+    clearLocalStorage();
+    setManger = new CardSetManager();
+    currentCardSet = setManger.manager[0];
+  }
+});
 
 topicTitle.addEventListener("click", () => {
   if (!setManger || setManger.size() === 0) {
@@ -55,33 +86,6 @@ topicTitle.addEventListener("click", () => {
 overlay.addEventListener("click", () => {
   menuOff();
 });
-// Opens Menu for Set Management
-function renderTopicMenu() {
-  const header = document.createElement("h2");
-  header.innerText = "Card Sets";
-  const topics = setManger.listTopics();
-  contextMenu.innerHTML = ""; // Clear the menu
-  contextMenu.appendChild(header);
-  //Create button for each Topic
-  topics.forEach((topic) => {
-    const btn = createBtn(topic, () => selectTopic(topic));
-    contextMenu.appendChild(btn);
-  });
-
-  //  Set Management Buttons
-  const div = document.createElement("div");
-  div.id = "menu-controls";
-  const plusBtn = createBtn("Add Set", () => {
-    addSet();
-  });
-  const subBtn = createBtn("Remove Set", () => {
-    removeSet();
-  });
-
-  div.appendChild(plusBtn);
-  div.appendChild(subBtn);
-  contextMenu.appendChild(div);
-}
 
 function selectTopic(topic) {
   const set = setManger.getSetByName(topic);
@@ -95,56 +99,8 @@ function selectTopic(topic) {
 
 // Button Functions
 
-function increaseIdx() {
-  idx++;
-  // Wrap around if idx is too big
-  if (idx > currentCardSet.getSize() - 1) {
-    idx = 0;
-  }
-  idxDisplay.innerText = idx;
-  displayCard();
-}
-function decreaseIdx() {
-  idx--;
-  // Wrap around if idx get to 0
-  if (idx < 0) {
-    idx = currentCardSet.getSize() - 1;
-  }
-  // Fixes bug that removeCard cause (leave phantom card behind)
-  if (idx == -1) {
-    idx = 0;
-  }
-  idxDisplay.innerText = idx;
-  displayCard();
-}
-function flipCard() {
-  const card = currentCardSet.arr[idx];
-  card.swapOrientation();
-  const flashcard = document.getElementById("flashcard-container");
-  // Plays flip animation
-  flashcard.classList.add("flip-animation");
-  flashcard.addEventListener(
-    "animationend",
-    () => {
-      flashcard.classList.remove("flip-animation");
-    },
-    { once: true }
-  );
+// Card and Set control functions
 
-  displayCard();
-}
-
-// Display current Card from the selected Set
-function displayCard() {
-  if (!currentCardSet || currentCardSet.getSize() === 0) {
-    cardContent.innerText = "No cards to display.";
-    return;
-  }
-  const card = currentCardSet.arr[idx];
-  cardContent.innerText = card.getData();
-  idxDisplay.innerText = idx + 1;
-  topicTitle.innerText = currentCardSet.topic;
-}
 // Creates Add Card form
 function addFlashcard() {
   contextMenu.innerHTML = "";
@@ -168,7 +124,6 @@ function addFlashcard() {
       back = "";
     }
     currentCardSet.add(front, back);
-    saveToLocalStorage(setManger);
     menuOff();
     idx = currentCardSet.getSize() - 1;
     displayCard();
@@ -180,7 +135,6 @@ function addFlashcard() {
 }
 function removeFlashcard() {
   currentCardSet.remove(idx);
-  saveToLocalStorage(setManger);
   decreaseIdx();
 }
 function addSet() {
@@ -197,7 +151,6 @@ function addSet() {
     }
     try {
       setManger.add(new CardSet(set));
-      saveToLocalStorage(setManger);
     } catch (error) {
       alert(error);
     }
@@ -233,7 +186,7 @@ function removeSet() {
       return;
     }
     setManger.remove(idxToRemove);
-    saveToLocalStorage(setManger);
+
     // Show the first  set in the manager
     currentCardSet = setManger.manager[0];
     idx = 0;
@@ -245,5 +198,114 @@ function removeSet() {
   contextMenu.appendChild(removeBtn);
   menuOn();
 }
+// UI Functions
 
+// Display current Card from the selected Set
+function displayCard() {
+  if (!currentCardSet || currentCardSet.getSize() === 0) {
+    cardContent.innerText = "No cards to display.";
+    return;
+  }
+  const card = currentCardSet.arr[idx];
+  cardContent.innerText = card.getData();
+  idxDisplay.innerText = idx + 1;
+  topicTitle.innerText = currentCardSet.topic;
+}
+function flipCard() {
+  const card = currentCardSet.arr[idx];
+  card.swapOrientation();
+  const flashcard = document.getElementById("flashcard-container");
+  // Plays flip animation
+  flashcard.classList.add("flip-animation");
+  flashcard.addEventListener(
+    "animationend",
+    () => {
+      flashcard.classList.remove("flip-animation");
+    },
+    { once: true }
+  );
+
+  displayCard();
+}
+// Opens Menu for Set Management
+function renderTopicMenu() {
+  const header = document.createElement("h2");
+  header.innerText = "Card Sets";
+  const topics = setManger.listTopics();
+  contextMenu.innerHTML = ""; // Clear the menu
+  contextMenu.appendChild(header);
+  //Create button for each Topic
+  topics.forEach((topic) => {
+    const btn = createBtn(topic, () => selectTopic(topic));
+    contextMenu.appendChild(btn);
+  });
+
+  //  Set Management Buttons
+  const div = document.createElement("div");
+  div.id = "menu-controls";
+  const plusBtn = createBtn("Add Set", () => {
+    addSet();
+  });
+  const subBtn = createBtn("Remove Set", () => {
+    removeSet();
+  });
+
+  div.appendChild(plusBtn);
+  div.appendChild(subBtn);
+  contextMenu.appendChild(div);
+}
+
+function createBtn(btnContent, callback) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.innerText = btnContent;
+  btn.addEventListener("click", callback);
+  return btn;
+}
+function menuOn() {
+  contextMenu.classList.remove("hidden");
+  overlay.classList.remove("hidden");
+  requestAnimationFrame(() => {
+    overlay.classList.add("active");
+  });
+}
+function menuOff() {
+  contextMenu.classList.add("hidden");
+  overlay.classList.remove("active");
+  overlay.addEventListener(
+    "transitionend",
+    () => overlay.classList.add("hidden"),
+    { once: true }
+  );
+}
+//Helpers
+function increaseIdx() {
+  idx++;
+  // Wrap around if idx is too big
+  if (idx > currentCardSet.getSize() - 1) {
+    idx = 0;
+  }
+  idxDisplay.innerText = idx;
+  displayCard();
+}
+function decreaseIdx() {
+  idx--;
+  // Wrap around if idx get to 0
+  if (idx < 0) {
+    idx = currentCardSet.getSize() - 1;
+  }
+  // Fixes bug that removeCard cause (leave phantom card behind)
+  if (idx == -1) {
+    idx = 0;
+  }
+  idxDisplay.innerText = idx;
+  displayCard();
+}
+
+window.addEventListener("beforeunload", () => {
+  saveToLocalStorage(setManger);
+});
+setInterval(() => {
+  saveToLocalStorage(setManger);
+}, 90000);
 displayCard();

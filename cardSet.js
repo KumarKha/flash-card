@@ -1,29 +1,14 @@
-/**
- * Represents a single flashcard with a front and backside.
- * Each card can be flipped between the two orientations.
- */
 class FlashCard {
-  /**
-   * Create a new Flashcard
-   * @param {string} frontData
-   * @param {string} backData
-   */
   constructor(frontData, backData) {
     this.frontData = frontData;
     this.backData = backData;
     this.currOrientation = "front";
   }
-  /**
-   * Flips the card orientation between front and back
-   */
+
   swapOrientation() {
     this.currOrientation = this.currOrientation === "front" ? "back" : "front";
   }
-  /**
-   * Returns the content currently visible on the card.
-   * @returns {string} - The text/data for the current side
-   * @throws {Error} - If currOrientation is not 'front' or 'back'
-   */
+
   getData() {
     if (this.currOrientation === "front") {
       return this.frontData;
@@ -34,9 +19,7 @@ class FlashCard {
     throw new Error("Unknown Card Oreintaion");
   }
 }
-/**
- * Represents a collection of FlashCard object grouped by topic
- */
+
 class CardSet {
   constructor(topic) {
     this.topic = topic;
@@ -51,6 +34,9 @@ class CardSet {
   }
   remove(idx) {
     this.arr.splice(idx, 1);
+  }
+  updateTopic(newTopic) {
+    this.topic = newTopic;
   }
 }
 
