@@ -18,8 +18,7 @@ Create, flip, and manage study cards directly in your browser — with progress 
 
 ## 🚀 Live Demo
 
-👉 [View on Cloudflare Pages](https://your-site-name.pages.dev)  
-_(replace this link after deployment)_
+👉 [View on Cloudflare Pages](https://flashcard.kumarkhalika.io/)
 
 ---
 
